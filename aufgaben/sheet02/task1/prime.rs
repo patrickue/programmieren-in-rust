@@ -1,7 +1,21 @@
 //! Aufgabe 2.1: Primzahltest
 
 fn main() {
+    let array = [3, 5, 6, 7, 9, 11, 15, 32, 33, 34, 35];
+    for elem in array.iter() {
+        println!("Is {} a prime? {}", elem, is_prime(*elem))
+    }
+}
 
+fn is_prime(num: i32) -> bool {
+    if num >= 3 {
+        for i in 2..num {
+            if num%i == 0 {
+                return false
+            }
+        }
+    }
+    true
 }
 
 #[test]
