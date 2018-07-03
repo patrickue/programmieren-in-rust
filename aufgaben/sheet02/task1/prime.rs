@@ -8,7 +8,9 @@ fn main() {
 }
 
 fn is_prime(num: i32) -> bool {
-    if num >= 3 {
+    if num == 1 {
+        return false
+    }else if num >= 3 {
         for i in 2..num {
             if num%i == 0 {
                 return false

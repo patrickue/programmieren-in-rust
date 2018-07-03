@@ -6,7 +6,21 @@ fn main() {
 }
 
 // TODO: write `sort()` function
+fn sort(array: &mut [u64]){
+    for i in 0..array.len()-1 {
+        let mut smallest_elem_idx = i;
+        for j in i+1..array.len() {
+            if array[j] < array[smallest_elem_idx] {
+                smallest_elem_idx = j; 
+            }
+        }
 
+        // interchange i and smallest_elem
+        let mut tmp = array[smallest_elem_idx];
+        array[smallest_elem_idx] = array[i];
+        array[i] = tmp;
+    }
+}
 
 #[test]
 fn sort_array() {
