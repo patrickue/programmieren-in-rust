@@ -161,3 +161,4 @@ verletzt. Die ungefähren Anforderungen:
 Euer Programm muss nicht genau so aussehen, wie oben im Beispiel gezeigt.
 
 Bonusaufgabe: Zuerst darf das Pokemon mit dem höheren `speed` Wert angreifen.
+ 

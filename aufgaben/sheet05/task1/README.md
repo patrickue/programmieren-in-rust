@@ -16,16 +16,16 @@ Das Projekt soll folgendermaßen strukturiert werden:
 
 - *Wurzel*: Hier befindet sich nur `main()`, die auch selber nur wenig
   Code enthält.
-- `db`: enthält Funktion `pokemon_by_name()`.
-    - `data`: enthält die konstanten Arrays.
-    - `types`: enthält viele wichtige Typen (allerdings ohne `impl` Block,
+- `db`: **ok!** enthält Funktion `pokemon_by_name()`.
+    - **ok!** `data`: enthält die konstanten Arrays.
+    - **ok!** `types`: enthält viele wichtige Typen (allerdings ohne `impl` Block,
       also nur Datenlayout):
       `Attack`, `AttackCategory`, `TypeEffectiveness`, `Type`, `PokemonType`,
       `PokemonModel`, `Stats`.
-- `engine`: enthält den Typen `Pokemon` mit Methoden.
-    - `canon`: Enthält alle Funktionen und Methoden die Formeln/Algorithmen aus
+- `engine`: **ok!** enthält den Typen `Pokemon` mit Methoden.
+    - `canon`: **ok!** Enthält alle Funktionen und Methoden die Formeln/Algorithmen aus
       dem Pokemon-Universum abbilden.
-- `game`: Enthält alle Funktionen, die irgendetwas einlesen oder ausgeben.
+- `game`: **ok!** Enthält alle Funktionen, die irgendetwas einlesen oder ausgeben.
   Insb. soll hier eine Funktion `fight()` definiert werden, die den ganzen
   Kampf abwickelt (damit `main()` schön klein bleibt).
 
@@ -79,3 +79,4 @@ von fremden Libraries zu lesen und zu verstehen.
 Ich denke aber, dass oft genug Beispiele bereitstehen, um zu verstehen, was man
 machen muss.
 Sonst gibt es ja immer noch Piazza ;-)
+/poke/(/

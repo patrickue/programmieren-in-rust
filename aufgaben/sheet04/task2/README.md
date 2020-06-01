@@ -216,4 +216,4 @@ num     := "0" | "1" | ... | "9"
 
 Zuletzt (unabhängig davon, ob ihr nur den halben oder ganzen Parser
 implementiert habt) soll alles in `main()` benutzt werden, um den
-Taschenrechner funktionsfähig zu machen.
+Taschenrechner funktionsfähi

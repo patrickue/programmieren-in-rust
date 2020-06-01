@@ -1,43 +1,33 @@
-// print if they are both
-fn main() -> () {
-    for iterationnumber in &[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20] {
-        let iterationnumber = *iterationnumber;
-        if !happy_prime(iterationnumber) {} else {
-            print!("{}", iterationnumber);
-            println!(" is a happy prime!");
+/// print if they are both
+fn main() {
+    for i in 1..21 {
+        if is_happy_prime(i) {
+            println!("{} is a happy prime!", i);
         }
     }
-
 }
 
-// is it botH?
-fn happy_prime(n: i32) -> bool {
-    match check_if_number_is_happy(n) {
-        false => return false,
-        _ => {}
-    }
-
-    if check_if_number_is_prime(n) == true {
-        return true;
-    } else {
-        return false;
-    }
+/// Check if a given number is prime and "happy number"
+fn is_happy_prime(n: usize) -> bool {
+    is_happy(n) && is_prime(n)
 }
 
-// Is it a happy number? https://en.wikipedia.org/wiki/Happy_number
-fn check_if_number_is_happy(number: i32) -> bool {
-    let mut  number: i32= number;
-
-    while number > 1 {
+/// Is it a happy number? https://en.wikipedia.org/wiki/Happy_number
+fn is_happy(mut n: usize) -> bool {
+    
+    fn sum_of_square_of_digits(mut m: usize) -> usize {
         let mut tmp = 0;
-        while number > 0 {
-            tmp = tmp + (number %10) * (number%10);
-            number = number / 10;
+        while m > 0 {
+            tmp = tmp + (m %10) * (m %10);
+            m = m / 10;
         }
-        number = tmp;
+        return tmp;
+    }
 
+    while n > 1 {
+        n = sum_of_square_of_digits(n);
         // We ended up in a cycle -> not happy
-        if (number == 4) {
+        if n == 4 {
             return false;
         }
     }
@@ -45,25 +35,45 @@ fn check_if_number_is_happy(number: i32) -> bool {
     return true;
 }
 
-// is it priem?
-fn check_if_number_is_prime(n: i32) -> bool {
-    if n == 1 {
+/// is it priem?
+fn is_prime(n: usize) -> bool {
+    // 0 and 1 are automatically no primes
+    if n < 2 {
         return false;
     }
 
-    if n == 2 {
-        return false;
-    }
-
-    let mut teilerGefunden:bool = false;
-
-    let mut teiler:i32= 2;
-    while (teiler < n) {
-        if (n % teiler == 0) {
-            teilerGefunden = true;
+    for divisor in 2..(n/2) {
+        if n % divisor == 0 {
+            return false;
         }
-        teiler = teiler + 1;
     }
 
-    return !teilerGefunden;
+    return true;
+}
+
+#[test]
+fn test_is_prime() {
+    assert_eq!(is_prime(1), false);
+    assert_eq!(is_prime(2), true);
+    assert_eq!(is_prime(3), true);
+    assert_eq!(is_prime(5), true);
+    assert_eq!(is_prime(7), true);
+    assert_eq!(is_prime(9), false);
+    assert_eq!(is_prime(11), true);
+    assert_eq!(is_prime(13), true);
+    assert_eq!(is_prime(23), true);
+    assert_eq!(is_prime(24), false);
+}
+
+#[test]
+fn test_is_happy() {
+    let happy_arr = [1, 7, 10, 13, 19, 23, 28, 31, 32, 338, 356, 874, 881, 1000];
+    let sad_arr = [2, 3, 14, 25, 341, 880, 999];
+
+    for &i in happy_arr.iter() {
+        assert_eq!(is_happy(i), true);
+    }
+    for &i in sad_arr.iter() {
+        assert_eq!(is_happy(i), false);
+    }
 }

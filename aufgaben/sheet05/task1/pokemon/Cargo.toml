@@ -1,0 +1,7 @@
+[package]
+name = "pokemon"
+version = "0.1.0"
+authors = ["Patrick Thomas <patrick-thomas@gmx.net>"]
+
+[dependencies]
+term-painter = "0.2.4"
