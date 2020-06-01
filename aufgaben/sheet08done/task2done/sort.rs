@@ -1,3 +1,5 @@
+use std::cmp::Ordering;
+
 fn main() {
     let mut arr = [
         90, 39, 49, 18, 43, 17, 38, 76, 24, 74, 56, 19, 32, 54, 33, 24, 47, 75,
@@ -10,8 +12,42 @@ fn main() {
     // let mut arr = [90, 39, 49, 18, 43, 17, 38, 76, 24, 74, 56, 19, 54, 33];
 
     println!("Before: {:?}", &arr[..]);
+    sort_by(&mut arr, |a, b| a.cmp(b));
     println!("After: {:?}", &arr[..]);
 }
+
+fn sort<T>(arr: &mut [T]) -> &[T]
+    where T: Ord {
+    sort_by(arr, |a, b| a.cmp(b))    
+}
+
+fn sort_by<F, T>(arr: &mut [T], mut f: F) -> &[T] 
+    where F: FnMut(&T, &T) -> Ordering {
+    let mut k: usize;
+
+    let len = arr.len();
+
+    for i in 0..len {
+        k = i;
+        for j in i+1..len {
+            if f(&arr[j], &arr[k]) == Ordering::Less
+            {
+                k = j
+            }
+        }
+        // invariant: a[k] smallest of a[i..n]
+        arr.swap(k, i)
+        // invariant: a[1..i] in final position
+    }
+    return arr;
+}
+
+fn sort_by_key<F, T, K>(arr: &mut [T], mut f: F) -> &[T] 
+    where F: FnMut(&T) -> K, 
+          K: Ord {
+    sort_by(arr, |a, b| f(a).cmp(&f(b)))
+}
+
 
 #[test]
 fn sort_short() {

@@ -1,3 +1,16 @@
+use std::option::Option;
+
+#[macro_export]
+macro_rules! try_opt {
+    ($expr:expr) => (
+        match $expr {
+            std::option::Option::Some(val) => val, 
+            std::option::Option::None => return None 
+        }
+    )
+}
+
+
 fn main() {
     println!("consistent: {:?}", is_home_consistent());
     println!("dummy: {:?}", foo());

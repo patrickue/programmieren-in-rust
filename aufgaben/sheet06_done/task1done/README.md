@@ -23,7 +23,7 @@ genauen Typen festlegen.
 
 ### b) Summe und Produkt
 
-Die Funktion nimmt zwei Argumente and und liefert sowohl die Summe als auch
+Die Funktion nimmt zwei Argumente an und liefert sowohl die Summe als auch
 das Produkt dieser beiden Werte zurück. Auch diese Funktion soll möglichst
 allgemein formuliert werden.
 
