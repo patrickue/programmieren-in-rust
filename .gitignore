@@ -1,3 +1,7 @@
 *.exe
 
 target/
+*.swp
+aufgaben/sheet07_done/task4_done/mycp/inputname.txt
+slides
+.idea

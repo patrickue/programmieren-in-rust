@@ -105,3 +105,16 @@ fn choose_count_more_than_options() -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
+#[test]
+fn choose_too_little_options() -> Result<(), Box<dyn std::error::Error>> {
+    let mut cmd = Command::cargo_bin("flip")?;
+    cmd.arg("choose")
+        .arg("--count=1")
+        .arg("Mary");
+    cmd.assert()
+        .failure()
+        .stderr(predicate::str::contains("Specify at least two options to choose from."));
+
+    Ok(())
+}
+

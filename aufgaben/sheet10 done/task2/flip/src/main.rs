@@ -3,6 +3,9 @@ use rand::Rng;
 use rand::seq::SliceRandom;
 //use rand::prelude::*;
 
+#[derive(Debug)]
+struct CustomError(String);
+
 #[cfg(test)]
 mod tests;
 
@@ -27,7 +30,7 @@ fn choose(mut list: Vec<String>, count: usize) -> Vec<String> {
     list[0..count].to_vec()
 }
 
-fn main() {
+fn main() -> Result<(), Box<dyn std::error::Error>>{
     let matches = App::new("MyApp")
         // Normal App and Arg configuration goes here...
         // In the following example assume we wanted an application which
@@ -94,56 +97,60 @@ fn main() {
         for _ in 0..times {
             println!("{}", coin());
         }
+        Ok(())
     }
-    else if matches.is_present("dice") {
-        if let Some(sub_matches) = matches.subcommand_matches("dice") {
-            let sides_str = sub_matches.value_of("sides");
-            println!("Value for sides: {:?}", sides_str);
-            
-            match sides_str.unwrap_or("6").parse::<usize>() {
-                Ok(n) => {
-                    for _ in 0..times {
-                        println!("{}", dice(n));
-                    }
+    else if let Some(sub_matches) = matches.subcommand_matches("dice") {
+        let sides_str = sub_matches.value_of("sides");
+        println!("Value for sides: {:?}", sides_str);
+        
+        match sides_str.unwrap_or("6").parse::<usize>() {
+            Ok(n) => {
+                for _ in 0..times {
+                    println!("{}", dice(n));
                 }
-                Err(_) => {
-                    eprintln!("Not a number for sides!");
-                    std::process::exit(1);
-                }
+                Ok(())
+            }
+            Err(_) => {
+                eprintln!("Not a number for sides!");
+                std::process::exit(1);
             }
         }
+        
     }
-    else if matches.is_present("choose") {
-        if let Some(sub_matches) = matches.subcommand_matches("choose") {
-            let count_str = sub_matches.value_of("count");
-            println!("Value for count: {:?}", count_str);
+    else if let Some(sub_matches) = matches.subcommand_matches("choose") {
+        let count_str = sub_matches.value_of("count");
+        println!("Value for count: {:?}", count_str);
 
-            let count = match count_str.unwrap_or("1").parse::<usize>() {
-                Ok(n) => n,
-                Err(_) => 
-                {
-                    eprintln!("Not a number for count!");
-                    std::process::exit(1);
-                }
-            };
-
-            let mut sequence: Vec<String>; 
-            if sub_matches.is_present("sequence") {
-                let iterator = sub_matches.values_of("sequence");
-                sequence = iterator.unwrap().map(|s| s.to_string()).collect()
-            }
-            else
+        let count = match count_str.unwrap_or("1").parse::<usize>() {
+            Ok(n) => n,
+            Err(_) => 
             {
-                eprintln!("Specify at least two options to choose from.");
+                eprintln!("Not a number for count!");
                 std::process::exit(1);
             }
-            if sequence.len() < count {
-                eprintln!("Count cannot be higher than number of elements.");
-                std::process::exit(1);
-            }
-            else {
-                println!("{:?}", choose(sequence, count));
-            }
+        };
+
+        let mut sequence: Vec<String>; 
+        if sub_matches.is_present("sequence") {
+            let iterator = sub_matches.values_of("sequence");
+            sequence = iterator.unwrap().map(|s| s.to_string()).collect()
         }
+        else
+        {
+            return Err(Box::new(error::Error {message:"Specify at least two options to choose from.".to_string()}));
+            //std::process::exit(1);
+        }
+        if sequence.len() < count {
+            eprintln!("Count cannot be higher than number of elements.");
+            std::process::exit(1);
+        }
+        else {
+            println!("{:?}", choose(sequence, count));
+            Ok(())
+        }
+    }
+    else
+    {
+        panic!("Not to be reached");
     }
 }
