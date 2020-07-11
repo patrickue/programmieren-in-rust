@@ -42,11 +42,11 @@ fn parse_and_exec() -> Result<(), Box<dyn Error>> {
     let player1 = new_player_with_type(
         1,
         matches.value_of("Player1").unwrap(),
-        playfield::SquareMarkType::Cross);
+        playfield::Square::Cross);
     let player2 = new_player_with_type(
         2,
         matches.value_of("Player2").unwrap(),
-        playfield::SquareMarkType::Circle);
+        playfield::Square::Circle);
 
     let_the_games_begin(player1, player2);
 

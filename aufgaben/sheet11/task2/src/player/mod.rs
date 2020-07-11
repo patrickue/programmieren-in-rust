@@ -1,6 +1,7 @@
 use std::fmt;
-use crate::playfield::{SquareMarkType, PlayField};
+use crate::playfield::{Square, PlayField};
 use crate::read_string;
+use std::hint::unreachable_unchecked;
 
 pub const PLAYER_TYPES: &'static[&str] = &[
     "human",
@@ -18,21 +19,22 @@ pub enum PlayerType {
 #[derive(Debug, Copy, Clone)]
 pub struct Player {
     pub name:  u8,
-    pub my_mark: SquareMarkType,
+    pub my_mark: Square,
 }
 
 
 impl fmt::Display for Player {
     fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
         let symbol = match self.my_mark {
-            SquareMarkType::Cross  => {'X'},
-            SquareMarkType::Circle => {'O'}
+            Square::Cross  => {'X'},
+            Square::Circle => {'O'},
+            Square::Empty => unreachable!()
         };
         write!(f, "Player {} ({})", self.name, symbol)
     }
 }
 
-pub fn new_player_with_type(p_name: u8, type_str: &str, mark: SquareMarkType) -> Box<dyn PlayerBehaviour>{
+pub fn new_player_with_type(p_name: u8, type_str: &str, mark: Square) -> Box<dyn PlayerBehaviour>{
     let p = Player{
         name: p_name,
         my_mark: mark,
@@ -100,16 +102,15 @@ impl PlayerBehaviour for HumanPlayer {
                      self);
 
             let input_str = read_string();
-            let coord = Player::parse_square_coordinate(&input_str);
+            let res = playfield.mark_square_by_str(&input_str, self.player.my_mark);
             //println!("Debug: Thanks for typing: {:?}", coord);
-            match coord {
-                Some(c) => {
-                    if playfield.mark_square(c, self.player.my_mark) == Ok(())
+            match res {
+                Ok(()) => {
                     {
                         break;
                     }
                 }
-                None => println!("Invalid coordinate, try again")
+                Err(e) => println!("Invalid coordinate: {}", e)
             }
         }
     }
@@ -128,11 +129,13 @@ pub struct StupidAiPlayer {
 
 impl PlayerBehaviour for StupidAiPlayer {
     fn choose_and_mark_square(&self, playfield: &mut PlayField) -> () {
-        let c_order:[(usize, usize); 9] = [(0,0), (0,1), (0,2), (1,0), (1,1), (1,2), (2,0), (2,1), (2,2)];
+        let c_order:[usize; 9] = [0, 1, 2, 3, 4, 5, 6, 7, 8];
         for c in c_order.iter() {
-            if playfield.mark_square(*c, self.player.my_mark) == Ok(())
-            {
-                break;
+            match playfield.mark_square(*c, self.player.my_mark) {
+                Ok(()) => {
+                    break;
+                },
+                _ => {}
             }
         }
     }
@@ -154,7 +157,7 @@ impl PlayerBehaviour for SmartAiPlayer {
 
         let coord = self.calc_best_square(playfield);
         println!("Smart-AI chose: {:?}", coord);
-        if playfield.mark_square(coord, self.player.my_mark) == Err(())
+        if playfield.mark_square(coord, self.player.my_mark).is_err()
         {
             unreachable!()
         }
@@ -162,64 +165,64 @@ impl PlayerBehaviour for SmartAiPlayer {
 }
 
 impl SmartAiPlayer {
-    pub fn calc_best_square(&self, playfield: &PlayField) -> (usize, usize) {
-        let mut best_square = (3, 3);
+    pub fn calc_best_square(&self, playfield: &PlayField) -> usize {
+        let mut best_square = 9; //invalid
         let mut best_ratio = (0, 0, 1);
         // check winning ratio for each open square
-        for i in 0..3 {
-            for j in 0..3 {
-                match playfield.value_of((i, j)) {
-                    None => {
+        for i in 0..8 {
+                match playfield.value_of(i) {
+                    Square::Empty => {
                         //default, set best_square to the first empty field
-                        if best_square==(3, 3) {
-                            best_square = (i, j);
+                        if best_square == 9 {
+                            best_square = i;
                         }
                         let mut temp_pf = playfield.clone();
-                        temp_pf.mark_square((i, j), self.player.my_mark);
+                        temp_pf.mark_square(i, self.player.my_mark);
                         let tmp_res = self.calc_winning_ratio(&temp_pf, self.player.my_mark.toggle());
-                        println!("Winning resolution for {:?} is {:?}", (i, j), tmp_res);
+                        println!("Winning resolution for {:?} is {:?}", i, tmp_res);
                         match self.player.my_mark {
-                            SquareMarkType::Cross => {
+                            Square::Cross => {
                                 if (tmp_res.0*best_ratio.2) > (best_ratio.0*tmp_res.2) {
                                     // Actual comparison, but divisor can be zero
                                     //((tmp_res.0) / (tmp_res.2)) > ((best_ratio.0) / (best_ratio.2))
                                     //old: (2, 0)
-                                    best_square = (i, j);
+                                    best_square = i;
                                     best_ratio = tmp_res;
                                 }
                             },
-                            SquareMarkType::Circle => {
+                            Square::Circle => {
                                 if (tmp_res.1 * best_ratio.2) > (best_ratio.2 * tmp_res.1) {
                                     // ((tmp_res.1) / (tmp_res.2)) > ((best_ratio.1) / (best_ratio.2))
-                                    best_square = (i, j);
+                                    best_square = i;
                                     best_ratio = tmp_res;
                                 }
                             }
+                            Square::Empty => unreachable!() //Player mark should never be empty
                         }
                     },
                     _ => {}
-                }
             }
         }
         println!("Best square: {:?}, best ratio: {:?}", best_square, best_ratio);
         return best_square;
     }
 
-    pub fn calc_winning_ratio(&self, playfield: &PlayField, mark: SquareMarkType) -> (usize, usize, usize) {
+    pub fn calc_winning_ratio(&self, playfield: &PlayField, mark: Square) -> (usize, usize, usize) {
         println!("Coming in with {}", playfield);
         let mut res = (0, 0, 0);
         // 1. Check if somebody won
         match playfield.check_if_somebody_won() {
             Some(x) => {
                 match x {
-                    SquareMarkType::Cross => {
+                    Square::Cross => {
                         println!("Cross won {}", playfield);
                         return (1, 0, 1);
                     },
-                    SquareMarkType::Circle => {
+                    Square::Circle => {
                         println!("Circle won {}", playfield);
                         return (0, 1, 1);
                     },
+                    Square::Empty => {}
                 }
             }
             None => {}
@@ -227,31 +230,30 @@ impl SmartAiPlayer {
 
         let mut any_empty_fields = false;
         // 2. If not, check if empty fields
-        for i in 0..3 {
-            for j in 0..3 {
-                match playfield.value_of((i, j)) {
-                    None => {
-                        any_empty_fields = true;
-                        let mut temp_pf = playfield.clone();
-                        //println!("On field: ({}{}) with: {}", i, j, mark);
-                        temp_pf.mark_square((i, j), mark);
-                        let tmp_res = self.calc_winning_ratio(&temp_pf, mark.toggle());
-                        // expect the most intelligent decision from the other player:
-                        match mark {
-                            SquareMarkType::Cross => {
-                                if (tmp_res.0*res.2) > (res.0*tmp_res.2) {
-                                    res = tmp_res;
-                                }
-                            },
-                            SquareMarkType::Circle => {
-                                if (tmp_res.1*res.2) > (res.1*tmp_res.2) {
-                                    res = tmp_res;
-                                }
+        for i in 0..9 {
+            match playfield.value_of(i) {
+                Square::Empty => {
+                    any_empty_fields = true;
+                    let mut temp_pf = playfield.clone();
+                    //println!("On field: ({}{}) with: {}", i, j, mark);
+                    temp_pf.mark_square(i, mark);
+                    let tmp_res = self.calc_winning_ratio(&temp_pf, mark.toggle());
+                    // expect the most intelligent decision from the other player:
+                    match mark {
+                        Square::Cross => {
+                            if (tmp_res.0*res.2) > (res.0*tmp_res.2) {
+                                res = tmp_res;
+                            }
+                        },
+                        Square::Circle => {
+                            if (tmp_res.1*res.2) > (res.1*tmp_res.2) {
+                                res = tmp_res;
                             }
                         }
-                    },
-                    _ => {}
-                }
+                        Square::Empty => {unreachable!()}
+                    }
+                },
+                _ => {}
             }
         }
         return match any_empty_fields {
