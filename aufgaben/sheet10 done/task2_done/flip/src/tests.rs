@@ -113,7 +113,7 @@ fn choose_too_little_options() -> Result<(), Box<dyn std::error::Error>> {
         .arg("Mary");
     cmd.assert()
         .failure()
-        .stderr(predicate::str::contains("Specify at least two options to choose from."));
+        .stderr(predicate::str::contains("requires at least 2 values, but only 1 was provided"));
 
     Ok(())
 }

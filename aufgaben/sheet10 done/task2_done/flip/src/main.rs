@@ -2,9 +2,19 @@ use clap::{App,Arg, SubCommand};
 use rand::Rng;
 use rand::seq::SliceRandom;
 //use rand::prelude::*;
+use std::error::Error;
+use std::fmt;
 
-#[derive(Debug)]
-struct CustomError(String);
+#[derive(Debug, Clone)]
+struct CustomError;
+
+impl fmt::Display for CustomError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "Some Error")
+    }
+}
+
+impl Error for CustomError {}
 
 #[cfg(test)]
 mod tests;
@@ -130,14 +140,14 @@ fn main() -> Result<(), Box<dyn std::error::Error>>{
             }
         };
 
-        let mut sequence: Vec<String>; 
+        let sequence: Vec<String>;
         if sub_matches.is_present("sequence") {
             let iterator = sub_matches.values_of("sequence");
             sequence = iterator.unwrap().map(|s| s.to_string()).collect()
         }
         else
         {
-            return Err(Box::new(error::Error {message:"Specify at least two options to choose from.".to_string()}));
+            return Err(CustomError.into()); // ::new("Specify at least two options to choose from.".to_string())));
             //std::process::exit(1);
         }
         if sequence.len() < count {
@@ -151,6 +161,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>>{
     }
     else
     {
-        panic!("Not to be reached");
+        println!("Please call -h to understand how to use the program.");
+        Err(CustomError.into())
     }
 }
