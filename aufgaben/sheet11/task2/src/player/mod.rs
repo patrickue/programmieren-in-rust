@@ -22,6 +22,13 @@ pub struct Player {
     pub my_mark: Square,
 }
 
+#[derive(Debug, PartialEq, Eq, Copy, Clone, Ord, PartialOrd, Hash)]
+pub enum GameOutcome {
+    Lost,
+    Draw,
+    DrawWin,
+    Win
+}
 
 impl fmt::Display for Player {
     fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
@@ -157,19 +164,25 @@ impl PlayerBehaviour for SmartAiPlayer {
 
         let coord = self.calc_best_square(playfield);
         println!("Smart-AI chose: {:?}", coord);
-        if playfield.mark_square(coord, self.player.my_mark).is_err()
-        {
-            unreachable!()
+        if coord > 8 {
+            println!("The game ended DRAW!");
+        }
+        else {
+            if playfield.mark_square(coord, self.player.my_mark).is_err()
+            {
+                unreachable!();
+            }
         }
     }
 }
 
 impl SmartAiPlayer {
     pub fn calc_best_square(&self, playfield: &PlayField) -> usize {
-        let mut best_square = 9; //invalid
-        let mut best_ratio = (0, 0, 1);
+        let mut best_square = 9; //default = invalid
+        let mut best_outcome: GameOutcome = GameOutcome::Lost;
         // check winning ratio for each open square
-        for i in 0..8 {
+        println!("==== Calculate best square ====");
+        for i in 0..9 {
                 match playfield.value_of(i) {
                     Square::Empty => {
                         //default, set best_square to the first empty field
@@ -178,51 +191,34 @@ impl SmartAiPlayer {
                         }
                         let mut temp_pf = playfield.clone();
                         temp_pf.mark_square(i, self.player.my_mark);
-                        let tmp_res = self.calc_winning_ratio(&temp_pf, self.player.my_mark.toggle());
-                        println!("Winning resolution for {:?} is {:?}", i, tmp_res);
-                        match self.player.my_mark {
-                            Square::Cross => {
-                                if (tmp_res.0*best_ratio.2) > (best_ratio.0*tmp_res.2) {
-                                    // Actual comparison, but divisor can be zero
-                                    //((tmp_res.0) / (tmp_res.2)) > ((best_ratio.0) / (best_ratio.2))
-                                    //old: (2, 0)
-                                    best_square = i;
-                                    best_ratio = tmp_res;
-                                }
-                            },
-                            Square::Circle => {
-                                if (tmp_res.1 * best_ratio.2) > (best_ratio.2 * tmp_res.1) {
-                                    // ((tmp_res.1) / (tmp_res.2)) > ((best_ratio.1) / (best_ratio.2))
-                                    best_square = i;
-                                    best_ratio = tmp_res;
-                                }
-                            }
-                            Square::Empty => unreachable!() //Player mark should never be empty
+                        let tmp_outcome = self.calc_winning_ratio(&temp_pf, self.player.my_mark,
+                                                                  self.player.my_mark.toggle());
+                        println!("Field – Chance for {:?} is {:?}", i, tmp_outcome);
+                        if tmp_outcome > best_outcome {
+                            best_square = i;
+                            best_outcome = tmp_outcome;
                         }
                     },
                     _ => {}
             }
         }
-        println!("Best square: {:?}, best ratio: {:?}", best_square, best_ratio);
+        println!("==== Best square: {:?}, best ratio: {:?} ====", best_square, best_outcome);
         return best_square;
     }
 
-    pub fn calc_winning_ratio(&self, playfield: &PlayField, mark: Square) -> (usize, usize, usize) {
+    pub fn calc_winning_ratio(&self, playfield: &PlayField, player_mark: Square,
+                              turn_mark: Square) -> GameOutcome {
         println!("Coming in with {}", playfield);
-        let mut res = (0, 0, 0);
+        let mut res = GameOutcome::Draw;
         // 1. Check if somebody won
         match playfield.check_if_somebody_won() {
             Some(x) => {
-                match x {
-                    Square::Cross => {
-                        println!("Cross won {}", playfield);
-                        return (1, 0, 1);
-                    },
-                    Square::Circle => {
-                        println!("Circle won {}", playfield);
-                        return (0, 1, 1);
-                    },
-                    Square::Empty => {}
+                if x == player_mark {
+                        println!("Player {} won. {}, return Win", player_mark, playfield);
+                        return GameOutcome::Win;
+                } else if x == player_mark.toggle() {
+                        println!("Player {} lost. {}, return Lost", player_mark, playfield);
+                        return GameOutcome::Lost;
                 }
             }
             None => {}
@@ -235,33 +231,59 @@ impl SmartAiPlayer {
                 Square::Empty => {
                     any_empty_fields = true;
                     let mut temp_pf = playfield.clone();
-                    //println!("On field: ({}{}) with: {}", i, j, mark);
-                    temp_pf.mark_square(i, mark);
-                    let tmp_res = self.calc_winning_ratio(&temp_pf, mark.toggle());
+                    println!("On field: ({}) with: {}, player {}", i, turn_mark, player_mark);
+                    temp_pf.mark_square(i, turn_mark);
+                    let tmp_res = self.calc_winning_ratio(&temp_pf, player_mark, turn_mark.toggle());
                     // expect the most intelligent decision from the other player:
-                    match mark {
-                        Square::Cross => {
-                            if (tmp_res.0*res.2) > (res.0*tmp_res.2) {
-                                res = tmp_res;
-                            }
-                        },
-                        Square::Circle => {
-                            if (tmp_res.1*res.2) > (res.1*tmp_res.2) {
-                                res = tmp_res;
-                            }
+                    if turn_mark == player_mark {
+                        if tmp_res > res
+                        {
+                            res = tmp_res
                         }
-                        Square::Empty => {unreachable!()}
+                    } else if turn_mark == player_mark.toggle() {
+                        // It's the other players turn, so we'll expect him to
+                        // take the worst (for us) choice. But we want to keep the
+                        // info if we have the change of winning, if other options are draw.
+                        match tmp_res {
+                            GameOutcome::Win => {
+                                //DrawWin and Win include the win,
+                                //Lost is lost anyway
+                                if res == GameOutcome::Draw
+                                {
+                                    res = GameOutcome::DrawWin;
+                                }
+                            },
+                            GameOutcome::DrawWin => {
+                                //if res is already Win, DrawWin, no change
+                                //if res is Lost, we keep that, too.
+                                if res == GameOutcome::Draw {
+                                    res = GameOutcome::DrawWin;
+                                }
+                            },
+                            GameOutcome::Draw => {
+                                //if res is DrawWin or Draw, no change
+                                //if res is Lost, we'll keep that.
+                                if res == GameOutcome::Win {
+                                    res = GameOutcome::DrawWin;
+                                }
+                            },
+                            GameOutcome::Lost => res = GameOutcome::Lost
+                        }
+                    } else {
+                        unreachable!()
                     }
                 },
                 _ => {}
             }
         }
-        return match any_empty_fields {
-            //in case of all fields full, this will return (0, 0)
+        let final_res = return match any_empty_fields {
+            //in case of all fields full, this will return draw
             true => res,
             //draw, nobody won
-            false => (0, 0, 1)
-        }
+            false => GameOutcome::Draw
+        };
+        println!("Returning {:?}", final_res);
+        return final_res;
     }
 }
 
